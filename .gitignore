@@ -9,3 +9,4 @@ runtime
 upload
 conf/
 www/static/js/
+src/common/config/route.js
