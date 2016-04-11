@@ -7,4 +7,5 @@ app
 node_modules
 runtime
 upload
+conf/
 www/static/js/
