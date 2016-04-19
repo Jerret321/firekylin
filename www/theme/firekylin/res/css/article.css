@@ -183,6 +183,17 @@ article .entry-content {
   word-wrap:break-word;
 }
 
+article .entry-content .ssl{
+
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: -2px;
+  width: 16px;
+  height: 16px;
+  background-size: 16px 16px;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAD/0lEQ…TnKwqogidp76mqZnyjqpzxNdumrp75bfa9lNqK1272d2j+D+LY/CDPYPo9AAAAAElFTkSuQmCC);
+}
+
 article .entry-content .date {
   color:#999;
   font-size:14px;
