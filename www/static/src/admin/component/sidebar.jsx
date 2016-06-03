@@ -1,5 +1,5 @@
 import React from 'react';
-import Base from '../../common/component/base';
+import Base from 'base';
 import {Link} from 'react-router';
 import classnames from 'classnames';
 
@@ -7,44 +7,82 @@ export default class extends Base {
   state = {
     routes: [
       {url: '/dashboard', icon: 'home', title:'概述'},
-      {url: '/post', icon: 'setting', title: '文章管理', children: [
+      {url: '/post', icon: 'topic', title: '文章管理', children: [
         {url: '/post/list', title: '文章列表'},
-        {url: '/post/new', title: '添加文章'}
+        {url: '/post/create', title: '添加文章'}
       ]},
-      {url: '/page', icon: 'reply', title: '页面管理', children: [
+      {url: '/page', icon: 'reply', title: '页面管理', type: 1, children: [
         {url: '/page/list', title: '页面列表'},
-        {url: '/page/new', title: '添加页面'},
-        {url: '/page/topic', title: '话题管理'}
+        {url: '/page/create', title: '添加页面'}
       ]},
-      {url: '/user', icon: 'user', title: '用户管理', children: [
+      {url: '/cate', icon: 'report', title: '分类管理', type: 1, children: [
+        {url: '/cate/list', title: '分类列表'},
+        {url: '/cate/create', title: '添加分类'}
+      ]},
+      {url: '/tag', icon: 'report', title: '标签管理', type: 1, children: [
+        {url: '/tag/list', title: '标签列表'},
+        {url: '/tag/create', title: '添加标签'}
+      ]},
+      {url: '/user', icon: 'user', title: '用户管理', type: 1, children: [
         {url: '/user/list', title: '用户列表'},
-        {url: '/user/create', title: '添加用户'}
+        {url: '/user/create', title: '添加用户'},
+         {url: '/user/edit_pwd', title: '修改密码'},
       ]},
-      {url: '/tag', icon: 'report', title: '标签管理', children: [
-        {url: '/tag/list', title: '内容审核'},
-        {url: '/tag/verify', title: '认证审核'}
+      {url: '/push', icon: 'share-v', title: '推送管理', type: 1, children: [
+        {url: '/push/list', title: '推送列表'},
+        {url: '/push/create', title: '新增推送'}
+      ]},
+      {url: '/options', icon: 'setting', title: '系统设置', type: 1, children: [
+        {url: '/options/general', title: '基本设置'},
+        {url: '/options/two_factor_auth', title: '两步验证'},
+        {url: '/options/comment', title: '评论设置'},
+        {url: '/options/analytic', title: '统计代码'},
+        {url: '/options/push', title: '推送设置'},
+        {url: '/options/import', title: '导入数据'}
       ]}
-    ],
-    currentRoute: '/dashboard'
+    ]
   };
+  /**
+   * 是否是高亮状态
+   * @param  {[type]}  routeUrl [description]
+   * @return {Boolean}          [description]
+   */
+  isActive(routeUrl){
+    return this.context.router.isActive(routeUrl);
+  }
   getClassName(icon, routeUrl){
-    let active = this.state.currentRoute === routeUrl;
+    let active = this.isActive(routeUrl);
     return classnames({
       icon: true,
       [`icon-${icon}`]: true,
       active: active
     })
   }
-  getSubUrlClassName(routeUrl){
-    if(this.state.currentRoute === routeUrl){
+  getSubUlClassName(routeUrl){
+    if(this.isActive(routeUrl)){
       return 'block';
     }
     return 'hide';
   }
+  getSubLinkClassName(routeUrl){
+    return classnames({
+      active: this.isActive(routeUrl)
+    })
+  }
   open(routeUrl){
-    this.setState({currentRoute: routeUrl});
+    this.context.router.push(routeUrl)
   }
   render(){
+    let routes = this.state.routes;
+    let userType = SysConfig.userInfo.type | 0;
+    routes = routes.filter(item => {
+      if(!item.type){
+        return true;
+      }
+      if(userType <= item.type){
+        return true;
+      }
+    });
     return (
       <div className="fk-side ps-container" id="fk-side">
         <div className="mod">
@@ -54,19 +92,21 @@ export default class extends Base {
         </div>
         <ul className="mod-bar" style={{marginTop: 10}}>
           <input type="hidden" id="hide_values" val="0" />
-          {this.state.routes.map( (route, i) =>
+          {routes.map( (route, i) =>
             <li key={i}>
-              {route.children ? <a onClick={this.open.bind(this, route.url)} className={this.getClassName(route.icon, route.url)}><span>{route.title}</span></a>
+              {route.children ? <a onClick={this.open.bind(this, route.children && route.children[0].url || route.url)} className={this.getClassName(route.icon, route.url)}><span>{route.title}</span></a>
               :
-              <Link to={route.url} onClick={this.open.bind(this, route.url)} className={this.getClassName(route.icon, route.url)}>
+              <Link to={route.url} onClick={this.open.bind(this, route.children && route.children[0].url || route.url)} className={this.getClassName(route.icon, route.url)}>
                 <span>{route.title}</span>
               </Link>
               }
               {route.children ?
-                <ul className={this.getSubUrlClassName(route.url)}>
+                <ul className={this.getSubUlClassName(route.url)}>
                   {route.children.map((child, j) =>
                     <li key={j}>
-                      <Link to={child.url}><span>{child.title}</span></Link>
+                      <Link to={child.url} onClick={this.open.bind(this, child.url)} className={this.getSubLinkClassName(child.url)}>
+                        <span>{child.title}</span>
+                      </Link>
                     </li>
                   )}
                 </ul>

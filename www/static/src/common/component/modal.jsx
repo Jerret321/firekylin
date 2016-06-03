@@ -1,6 +1,6 @@
 import React from 'react';
-import {Promise} from 'es6-promise';
-import autobind from 'autobind-decorator';
+//import {Promise} from 'es6-promise';
+//import autobind from 'autobind-decorator';
 import classNames from 'classnames';
 
 import Base from './base';
@@ -11,12 +11,11 @@ import firekylin from '../../common/util/firekylin';
 /**
  * 通用弹出层
  */
-@autobind
 export default class extends Base {
   constructor(props){
     super(props);
   }
-  
+
   componentDidMount(){
     window.addEventListener("hashchange", this.hashchange);
     this.listenTo(ModalStore, this.change.bind(this));
@@ -27,7 +26,7 @@ export default class extends Base {
    * @return {[type]}      [description]
    */
   change() {
-    
+
   }
   /**
    * hashchange的时候关闭弹层
@@ -107,14 +106,8 @@ export default class extends Base {
 
   getAlert(){
     return (
-      <div className="dialog-alert anim-modal">
-        <h2 className="title">{this.data.title}</h2>
-        <div className="dialog-content">
-            {this.data.content}
-        </div>
-        <div className="btn-box">
-            <a href="###" onClick={this.close} className="btn-cancel">关闭</a>
-        </div>
+      <div>
+        {this.data.content}
       </div>
     );
   }
@@ -143,6 +136,12 @@ export default class extends Base {
     event.preventDefault();
     return this.btnClick(this.data.callback);
   }
+  confirmCancel(event){
+   if(this.data.cancelCallback) {
+     this.data.cancelCallback();
+   }
+   this.close(event);
+  }
   /**
    * confirm components
    * @return {[type]} [description]
@@ -150,32 +149,37 @@ export default class extends Base {
   getConfirm(){
     let className = classNames({
       'dialog-confirm': true,
-      'anim-modal': true,
-      [this.data.className]: true
+      'anim-modal': true
     });
     return (
       <div className={className}>
-        <h2 className="title">{this.data.title}</h2>
-        <div className="dialog-content">
-            {this.data.content}
-        </div>
-        <div className="btn-box">
-            <a href="###" onClick={this.close} className="btn-cancel">取消</a>
-            <a href="###" onClick={this.confirm} className="btn-ok">确定</a>
-        </div>
+        {this.data.content}
       </div>
     );
   }
 
-  getPanelButtons(){
+  getButtons(){
+
+    if(this.data.type === 'alert'){
+      return (<div className="modal-footer">
+        <button type="button" onClick={this.confirmCancel.bind(this)} className="btn btn-default" data-dismiss="modal">关闭</button>
+      </div>);
+    }
+    if(this.data.type === 'confirm'){
+      return (<div className="modal-footer">
+        <button type="button" onClick={this.confirmCancel.bind(this)} className="btn btn-default" data-dismiss="modal">取消</button>
+        <button type="button" onClick={this.confirm.bind(this)} className="btn btn-primary">确定</button>
+      </div>);
+    }
+
     if(this.data.buttons.length === 0){
       return;
     }
-    let btnList = this.data.buttons.map(item => {
-      return (<a href="###" onClick={item.callback} className={item.className}>{item.text}</a>);
+    let btnList = this.data.buttons.map((item,i) => {
+      return (<a href="###" onClick={item.callback} className={item.className} key={i}>{item.text}</a>);
     });
     return (
-      <div className="btn-box">
+      <div className="btn-box modal-footer">
           {btnList}
       </div>
     );
@@ -188,12 +192,12 @@ export default class extends Base {
 
     return (
       <div className={className}>
-        <a href="###" onClick={this.close} className="close-btn"></a>
-        <h2 className="title">{this.data.title}</h2>
+        <a href="###" onClick={this.close.bind(this)} className="close-btn"></a>
+        {/*<h2 className="title">{this.data.title}</h2>*/}
         <div className="dialog-content">
             {this.data.content}
         </div>
-        {this.getPanelButtons()}
+
       </div>
     );
   }
@@ -215,12 +219,28 @@ export default class extends Base {
       data = this.parsePanelData(data);
     }
     this.data = data;
-
+    let clsName = classNames({
+      'modal-dialog': true,
+      [this.data.className]: true
+    });
     return (
-      <div className='dialog-wrap'>
-        <div className="shadow"></div>
-        {this.getDialogContent()}
-    </div>
+      <div>
+      <div className='modal fade in'  style={{display: 'block'}}>
+        <div className={clsName}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <button type="button" onClick={this.close.bind(this)} className="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+              <h4 className="modal-title">{this.data.title}</h4>
+            </div>
+            <div className="modal-body">
+            {this.getDialogContent()}
+            </div>
+            {this.getButtons()}
+          </div>
+        </div>
+      </div>
+      <div className="modal-backdrop fade in"></div>
+      </div>
     );
   }
 }

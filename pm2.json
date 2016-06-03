@@ -1,10 +1,9 @@
 {
   "apps": [{
-    "name": "firekylin",
+    "name": "jiangtao's blog",
     "script": "www/production.js",
-    "cwd": "/Users/welefen/Develop/git//Users/welefen/Develop/git/firekylin",
-    "exec_mode": "cluster",
-    "instances": 0,
+    "cwd": "home/web/www.imjiangtao.com.1",
+    "exec_mode": "fork",
     "max_memory_restart": "1G",
     "autorestart": true,
     "node_args": [],

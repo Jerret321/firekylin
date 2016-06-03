@@ -1,5 +1,5 @@
 //import {Promise} from 'es6-promise';
-
+import moment from 'moment';
 import TipActions from '../action/tip';
 
 let toString = Object.prototype.toString;
@@ -52,6 +52,25 @@ let firekylin = {
       }
     });
     return deferred.promise;
+  },
+  upload: (data, url = '/admin/api/file') => {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.onload = function() {
+        let res = JSON.parse(xhr.responseText);
+        if(res.errno != 0) {
+          reject(res);
+        } else {
+          resolve(res);
+        }
+
+      }
+      xhr.onerror = function() {
+        reject(xhr);
+      }
+      xhr.send(data);
+    });
   },
   /**
    * check object is object
@@ -205,7 +224,7 @@ let firekylin = {
       return true;
     }
 
-    
+
     // 7.1. All identical values are equivalent, as determined by ===.
     if (actual === expected) {
       return true;
@@ -241,6 +260,10 @@ let firekylin = {
     } else {
       return objEquiv(actual, expected);
     }
+  },
+
+  formatTime(str) {
+    return str ? moment(new Date(str)).format("YYYY年MM月DD日 HH:mm") : '';
   }
 };
 

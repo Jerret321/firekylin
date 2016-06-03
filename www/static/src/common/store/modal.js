@@ -1,6 +1,6 @@
 import Reflux from 'reflux';
 
-import ModalActions from '../actions/modal';
+import ModalActions from '../action/modal';
 
 export default Reflux.createStore({
 
@@ -69,14 +69,15 @@ export default Reflux.createStore({
    * @param  {[type]} text [description]
    * @return {[type]}      [description]
    */
-  onConfirm: function(title, content, callback, className, options){
+  onConfirm: function(title, content, callback, className, options, cancelCallback){
     let data = {
       type: 'confirm',
       title: title,
       content: content,
       callback: callback,
       className: className || '',
-      options: options||{}
+      options: options||{},
+      cancelCallback: cancelCallback
     };
     let idx = this.add(data);
     ModalActions.confirm.completed(idx);

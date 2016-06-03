@@ -20,8 +20,11 @@ export default class extends think.model.base {
    * get options
    * @return {} []
    */
-  getOptions(){
-    return think.cache(this.cacheKey, async () => {
+  async getOptions(flag){
+    if(flag === true){
+      await think.cache(this.cacheKey, null);
+    }
+    let ret = await think.cache(this.cacheKey, async () => {
       let data = await this.select();
       let result = {};
       data.forEach(item => {
@@ -29,6 +32,22 @@ export default class extends think.model.base {
       });
       return result;
     }, this.cacheOptions);
+    //comment type
+    if(ret){
+      if(ret.comment && think.isString(ret.comment)){
+        ret.comment = JSON.parse(ret.comment);
+      }
+      if(!ret.comment){
+        ret.comment = {type: 'disqus'};
+      }
+      if(ret.push_sites && think.isString(ret.push_sites)){
+        ret.push_sites = JSON.parse(ret.push_sites);
+      }
+      if(!ret.push_sites){
+        ret.push_sites = {};
+      }
+    }
+    return ret;
   }
   /**
    * update options
@@ -54,9 +73,16 @@ export default class extends think.model.base {
     let promises = [p1];
     for(let key in changedData){
       let value = changedData[key];
-      let p = this.where({key: key}).update({value: value});
+      let exist = await this.where({key: key}).count('key');
+      let p;
+      if(exist){
+        p = this.where({key: key}).update({value: value});
+      }else{
+        p = this.add({key, value});
+      }
       promises.push(p);
     }
-    return Promise.all(promises);
+    await Promise.all(promises);
+    await this.getOptions(true);
   }
 }
