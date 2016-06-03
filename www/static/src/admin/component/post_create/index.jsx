@@ -23,10 +23,14 @@ import firekylin from 'common/util/firekylin';
 import ModalAction from 'common/action/modal';
 import PushStore from 'admin/store/push';
 import PushAction from 'admin/action/push';
+import OptionsAction from 'admin/action/options';
+import OptionsStore from 'admin/store/options';
+
 import './style.css';
 
 export default class extends Base {
   initialState() {
+    OptionsAction.defaultCategory();
     return Object.assign({
       postSubmitting: false,
       draftSubmitting: false,
@@ -49,6 +53,7 @@ export default class extends Base {
       push_sites: []
     });
   }
+
   constructor(props){
     super(props);
     this.state = this.initialState();
@@ -61,7 +66,6 @@ export default class extends Base {
   componentWillMount() {
     this.listenTo(PostStore, this.handleTrigger.bind(this));
     this.listenTo(PushStore, this.pushHandleTrigger.bind(this));
-
     this.listenTo(CateStore, cateList => {
       let list = cateList.filter(cate => cate.pid === 0);
       for(let i=0,l=list.length; i<l; i++) {
@@ -72,7 +76,10 @@ export default class extends Base {
       this.setState({cateList: list});
     });
     this.listenTo(TagStore, tagList => this.setState({tagList}));
-
+    this.listenTo(OptionsStore, data => {
+      this.state.postInfo.cate.push( {id: +data} );
+      this.forceUpdate();
+    });
     CateAction.select();
     TagAction.select();
     if(this.id){
@@ -96,6 +103,7 @@ export default class extends Base {
     let initialState = this.initialState();
     initialState.cateList = this.state.cateList;
     initialState.tagList = this.state.tagList;
+    initialState.push_sites = this.state.push_sites;
     this.setState(initialState);
   }
   /**
@@ -105,6 +113,7 @@ export default class extends Base {
    * @return {[type]}      [description]
    */
   handleTrigger(data, type){
+    console.log(type, data);
     switch(type){
       case 'savePostFail':
         this.setState({draftSubmitting: false, postSubmitting: false});
@@ -118,12 +127,15 @@ export default class extends Base {
         if(data.create_time === '0000-00-00 00:00:00'){
           data.create_time = '';
         }
-        data.push_sites = [];
         data.create_time = data.create_time ? moment( new Date(data.create_time) ).format('YYYY-MM-DD HH:mm:ss') : data.create_time;
         data.tag = data.tag.map(tag => tag.name);
         data.cate.forEach(item => this.cate[item.id] = true);
-        if(!data.options.push_sites){
-          data.options.push_sites = [];
+        if( !data.options ) {
+          data.options = {push_sites: []};
+        } else if( typeof(data.options) === 'string' ) {
+          data.options = JSON.parse(data.options);
+        } else {
+          data.options.push_sites = data.options.push_sites || [];
         }
         this.setState({postInfo: data});
         break;
@@ -145,11 +157,12 @@ export default class extends Base {
     }
 
     /** 草稿不存创建时间，其它的状态则默认时间为当前时间 **/
-    if( this.state.status === 0 ) {
-      values.create_time = '';
-    } else {
-      values.create_time = this.state.postInfo.create_time || moment().format('YYYY-MM-DD HH:mm:ss');
-    }
+    values.create_time = this.state.postInfo.create_time;
+    // if( this.state.status === 0 ) {
+    //   values.create_time = '';
+    // } else {
+    //   values.create_time = this.state.postInfo.create_time || moment().format('YYYY-MM-DD HH:mm:ss');
+    // }
 
     values.status = this.state.status;
     values.markdown_content = this.state.postInfo.markdown_content;
@@ -159,10 +172,13 @@ export default class extends Base {
     }
 
     values.type = this.type; //type: 0为文章，1为页面
-    values.allow_comment = this.state.postInfo.allow_comment ? 1 : 0;
+    values.allow_comment = Number(this.state.postInfo.allow_comment);
     values.push_sites = this.state.postInfo.push_sites;
     values.cate = Object.keys(this.cate).filter(item => this.cate[item]);
     values.tag = this.state.postInfo.tag;
+
+    let push_sites = this.state.push_sites.map(({appKey}) => appKey);
+    this.state.postInfo.options.push_sites = this.state.postInfo.options.push_sites.filter(appKey => push_sites.includes(appKey));
     values.options = JSON.stringify(this.state.postInfo.options);
     PostAction.save(values);
   }
@@ -194,6 +210,8 @@ export default class extends Base {
 
     //baseUrl
     let baseUrl = location.origin + '/' + ['post', 'page'][this.type] + '/';
+    let push_sites = this.state.postInfo.options.push_sites || [];
+
     return (
       <div className="fk-content-wrap">
         <BreadCrumb {...this.props} />
@@ -345,7 +363,7 @@ export default class extends Base {
                     </label>
                   </div>
                 </div>
-                {this.state.push_sites.length > 0 ?
+                {SysConfig.userInfo.type == 1 && this.state.push_sites.length > 0 ?
                 <div className="form-group">
                   <label className="control-label">文章推送</label>
                   <ul>
@@ -356,10 +374,9 @@ export default class extends Base {
                               type="checkbox"
                               name="push_sites"
                               value={site.appKey}
-                              checked={this.state.postInfo.options.push_sites.indexOf(site.appKey) > -1}
+                              checked={push_sites.includes(site.appKey)}
                               onChange={()=>{
-                                let push_sites = this.state.postInfo.options.push_sites;
-                                if( push_sites.indexOf(site.appKey) > -1 ) {
+                                if( push_sites.includes(site.appKey) ) {
                                   this.state.postInfo.options.push_sites = push_sites.filter(appKey => appKey != site.appKey);
                                 } else {
                                   this.state.postInfo.options.push_sites.push(site.appKey);

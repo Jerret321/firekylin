@@ -59,7 +59,7 @@ export default class extends think.service.base {
       if(!ths.length){
         return;
       }
-      let url = `https://${comment.name}.disqus.com/count-data.js?1=${ths.join('&l=')}`;
+      let url = `https://${comment.name}.disqus.com/count-data.js?1=${ths.join('&1=')}`;
       //think.log(`sync comments ${url}`);
       let fn = think.promisify(request, request);
       let response = await fn(url).catch(() => {});
@@ -123,7 +123,6 @@ export default class extends think.service.base {
     }
   }
   clearPostCache(){
-    console.log('clear post cache');
     return think.cache('post_1', null);
   }
 }

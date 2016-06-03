@@ -6,6 +6,11 @@ import request from 'request';
 import xml2js from 'xml2js';
 import toMarkdown from 'to-markdown';
 
+request.defaults({
+  strictSSL: false,
+  rejectUnauthorized: false
+});
+
 export default class extends Base {
   async postAction() {
     /** 处理远程抓取 **/
@@ -52,16 +57,16 @@ export default class extends Base {
       timeout: 1000,
       encoding: 'binary'
     }).catch(() =>{
-      return this.fail("URL参数不合法或者请求失败！");
+      return this.fail("UPLOAD_URL_ERROR");
     });
 
     if(result.headers["content-type"].indexOf('image') === -1) {
-      return this.fail("请求的资源不是一张图片");
+      return this.fail("UPLOAD_TYPE_ERROR");
     };
 
     let writeFile = think.promisify(fs.writeFile, fs);
     let destDir = moment(new Date).format('YYYYMM');
-    let basename = (this.post('name') ? this.post('name') : think.md5(result)) + path.extname(url);
+    let basename = (this.post('name') ? this.post('name') : think.md5(result.body)) + path.extname(url);
     let destPath = path.join( think.UPLOAD_PATH, destDir );
     if( !think.isDir(destPath) ) {
       think.mkdir(destPath);
@@ -148,6 +153,7 @@ export default class extends Base {
       } else {
         summary = item['content:encoded'][0];
       }
+      
       let post = {
         title: item.title[0],
         pathname: decodeURIComponent(item['wp:post_name'][0]),
@@ -158,8 +164,8 @@ export default class extends Base {
         status: postStatus[ item['wp:status'][0] ] || 0,
         user_id: user.id,
         comment_num: 0,
-        allow_comment: item['wp:comment_status'][0] === 'open',
-        is_public: item['wp:status'][0] !== 'private',
+        allow_comment: Number(item['wp:comment_status'][0] === 'open'),
+        is_public: Number(item['wp:status'][0] !== 'private'),
         tag: item.hasOwnProperty('category') ? item.category.filter(item => item.$.domain === 'post_tag').map(item => item._) : [],
         cate
       };

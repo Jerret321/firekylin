@@ -87,7 +87,7 @@ ul,ol{padding:0;list-style:none;}
 .mod-user li a{padding: 0}
 
 /*fk-side start*/
-.fk-side{position:fixed;top:0; z-index:16;display:block;overflow:hidden; width:235px;height:100%;background:#323232;}
+.fk-side{position:fixed;top:0; z-index:16;display:block;overflow-x:hidden; overflow-y: auto; width:235px;height:100%;background:#323232;}
 .fk-side .mod-logo{padding:10px 10px 10px 25px;height:55px;}
 .ps-scrollbar-y-rail{margin-top: 50px;}
 .fk-side .mod-message{padding:8px 5px 0 10px;height:55px;background:#3f3f3f;}
@@ -235,7 +235,15 @@ textarea{resize:none;}
 	left: 10px;
 	content: "\e604";
 }
-
+.fk-new-verstion {
+	margin-left: 10px;
+	animation: bling .5s infinite;
+}
+@keyframes bling {
+	from {opacity: 1;}
+	50% {opacity: 0;}
+	to {opacity: 1;}
+}
 /*.chat-symbol{padding:0;line-height:34px;}
 .fk-wechat-dropdown-box{position:relative;width:230px;height:34px;line-height:34px;}
 .fk-wechat-dropdown-box input{padding-right:30px!important;}

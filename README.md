@@ -8,12 +8,19 @@ A Simple & Fast Node Bloging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+
 * http://blog.h5jun.com/ - 月影的博客
 * http://gyblog.cn/ - 光宇的博客
 * http://welefen.com/ - welefen 的博客
+* https://haozi.me/ - 耗子么
+* https://imjiangtao.com - 江涛的博客
+* http://aztack.wang/ - Aztack's blog
+* https://blog.cosli.top/ - 且等风来
+* http://lisongfeng.cn - 为之漫笔
+* https://g.32ph.com/ - Steven's Club
+* https://cooxa.com/ - 大路小兵的博客
 
 如果你的博客也是用 FireKylin 构建的，请到 https://github.com/75team/firekylin/issues/34 提交网址。
 
 ## 安装
 
-[下载最新的安装包 - v0.6.0](https://raw.githubusercontent.com/75team/firekylin/master/build/firekylin_0.6.0.tar.gz)
+[下载最新的安装包 - v0.12.2](http://firekylin.org/release/firekylin_0.12.2.tar.gz)
 
 ## 安装依赖
 
@@ -39,7 +46,7 @@ A Simple & Fast Node Bloging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+
 
 ## 配置 nginx
 
-将项目下的 `nginx_default.conf` 改为 `nginx_conf`，修改文件中的 `server_name`、`root` 和 `set $node_port` 等配置值，然后将该文件软链到 nginx 的配置目录下。
+将项目下的 `nginx_default.conf` 改为 `nginx.conf`，修改文件中的 `server_name`、`root` 和 `set $node_port` 等配置值，然后将该文件软链到 nginx 的配置目录下。
 
 假设 nginx 的配置目录为 `/usr/local/nginx/conf/include`，那么可以通过下面的命令设置软链：
 

@@ -259,15 +259,18 @@ class MdEditor extends React.Component {
         <Tab eventKey={2} title="插入内链">
           <div style={{margin: '20px 0'}}>
             <div className="form-group">
-              <label className="control-label" style={{display: 'inline-block', lineHeight: '30px'}}>链接文本：</label>
+              <label className="control-label" style={{display: 'inline-block', lineHeight: '30px'}}>链接地址：</label>
               <div style={{display: 'inline-block', width: '80%'}}>
-                <input type="text" className="form-control" onChange={e => this.setState({linkText: e.target.value})}/>
+                <Search onSelect={(val, opt) => {
+                    document.getElementsByClassName('inner-link-text')[0].value = opt.props.children;
+                    this.setState({linkUrl: `${location.origin}/post/${val}.html`, linkText: opt.props.children})
+                }}/>
               </div>
             </div>
             <div className="form-group">
-              <label className="control-label" style={{display: 'inline-block', lineHeight: '30px'}}>链接地址：</label>
+              <label className="control-label" style={{display: 'inline-block', lineHeight: '30px'}}>链接文本：</label>
               <div style={{display: 'inline-block', width: '80%'}}>
-                <Search onSelect={val => this.setState({linkUrl: `${location.origin}/post/${val}.html`})}/>
+                <input type="text" className="form-control inner-link-text" onChange={e => this.setState({linkText: e.target.value})}/>
               </div>
             </div>
           </div>
@@ -284,12 +287,12 @@ class MdEditor extends React.Component {
       <Tabs defaultActiveKey={1}>
         <Tab eventKey={1} title="本地上传">
           <div style={{margin: '20px 0'}}>
-            <input type="file" name="file" onChange={e=> this.setState({file: e.target.files})} />
+            <input type="file" name="file" onChange={e=> this.setState({file: e.target.files, fileUrl: null})} />
           </div>
         </Tab>
         <Tab eventKey={2} title="从网络上抓取">
           <div style={{margin: '20px 0'}}>
-            <input type="text" name="url" className="form-control" onChange={e=> this.setState({fileUrl: e.target.value})} />
+            <input type="text" name="url" className="form-control" onChange={e=> this.setState({fileUrl: e.target.value, file: null})} />
           </div>
         </Tab>
       </Tabs>,

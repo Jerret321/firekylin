@@ -53,8 +53,8 @@ export default class extends Base {
   }
 
   async deletePost(post_id) {
-    await this.model('post_cate').delete({post_id});
-    await this.model('post_tag').delete({post_id});
+    //await this.model('post_cate').delete({post_id});
+    //await this.model('post_tag').delete({post_id});
     return this.where({id: post_id}).delete();
   }
 
@@ -74,13 +74,15 @@ export default class extends Base {
    * @param  {Number} nums []
    * @return {}      []
    */
-  getLatest(nums = 10){
-    return this.order('id DESC').where({
+  getLatest(user_id, nums = 10){
+    let where = {
       create_time: {'<=': think.datetime()},
       is_public: 1, //公开
       type: 0, //文章
-      status: 3 //已经发布
-    }).limit(nums).setRelation(false).order('create_time DESC').select();
+      status: 3, //已经发布
+    };
+    if(user_id) { where.user_id = user_id; }
+    return this.order('id DESC').where(where).limit(nums).setRelation(false).order('create_time DESC').select();
   }
 
   async afterUpdate(data, options) {
@@ -99,6 +101,7 @@ export default class extends Base {
   }
 
   clearCache() {
+    think.log('clear cache');
     return think.cache('post_1', null);
   }
 }

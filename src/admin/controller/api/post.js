@@ -1,10 +1,9 @@
 'use strict';
 import marked from "marked";
 import Base from './base.js';
-import request from 'request';
 import markToc from "marked-toc";
-import {PasswordHash} from 'phpass';
 import highlight from 'highlight.js';
+import push2Firekylin from 'push-to-firekylin';
 
 export default class extends Base {
   modelInstance = this.modelInstance.where({type: 0});
@@ -32,12 +31,22 @@ export default class extends Base {
       if(this.userInfo.type !== 1){
         where.user_id = this.userInfo.id;
       }
+
       if(this.get('status')) {
         where.status = this.get('status');
       }
+
       if(this.get('keyword')) {
-        where.title = ["like", `%${this.get('keyword')}%`];
+        let keywords = this.get('keyword').split(/\s+/g);
+        if( keywords.indexOf(':public') > -1 || keywords.indexOf(':private') > -1 ) {
+          where.is_public = Number(keywords.indexOf(':public') > -1);
+          keywords = keywords.filter(word => word !== ':public' && word !== ':private');
+        }
+        if(keywords.length > 0) {
+          where.title = ["like", keywords.map(word => `%${word}%`)];
+        }
       }
+
       let field = ['id', 'title', 'user_id', 'create_time', 'update_time', 'status', 'pathname'];
       data = await this.modelInstance.where(where).field(field).order('id DESC').page( this.get('page'), 15 ).countSelect();
     }
@@ -60,7 +69,7 @@ export default class extends Base {
     }
 
     /** 如果是编辑发布文章的话默认状态改为审核中 **/
-    if( data.status == 3 && this.userInfo.type == 2 ) {
+    if( data.status == 3 && this.userInfo.type != 1 ) {
       data.status = 1;
     }
 
@@ -71,6 +80,7 @@ export default class extends Base {
     data = this.getContentAndSummary(data);
     data.user_id = this.userInfo.id;
     data = this.getPostTime(data);
+    data.options = data.options ? JSON.stringify(data.options) : '';
 
     let insertId = await this.modelInstance.addPost(data);
     return this.success({id: insertId});
@@ -84,20 +94,17 @@ export default class extends Base {
       return this.fail('PARAMS_ERROR');
     }
     let data = this.post();
+
     /** 推送文章 **/
     this.pushPost(data);
-    
+
     data.id = this.id;
-    if(data.markdown_content) {
-      data = this.getContentAndSummary(data);
-    }
-    if(data.create_time) {
-      data = this.getPostTime(data);
-    }
+    data = this.getPostTime(data);
+    data = this.getContentAndSummary(data);
+    data.options = data.options ? JSON.stringify(data.options) : '';
     if(data.tag) {
       data.tag = await this.getTagIds(data.tag);
     }
-
     let rows = await this.modelInstance.savePost(data);
     return this.success({affectedRows: rows});
   }
@@ -109,9 +116,9 @@ export default class extends Base {
 
     /** 如果不是管理员且不是本文作者则无权限删除文章 **/
     if(this.userInfo.type !== 1) {
-      let post = this.modelInstance.where({id}).find();
-      if( post.user_id !== this.userInfo.id ) {
-        return this.fail('ACCESS_ERROR');
+      let post = await this.modelInstance.where({id: this.id}).find();
+      if( post.user_id != this.userInfo.id ) {
+        return this.fail('USER_NO_PERMISSION');
       }
     }
 
@@ -120,33 +127,41 @@ export default class extends Base {
   }
 
   async pushPost(post) {
-    if( post.status != 3 && data.is_public != 1 && data.push_sites.length == 0 ) {
+    console.log(post);
+    let postOpt = JSON.parse(post.options);
+    let canPush = Array.isArray(postOpt.push_sites) && postOpt.push_sites.length > 0;
+    if( post.status != 3 && post.is_public != 1 && !canPush ) {
       return;
     }
-
     post = think.extend({}, post);
-    post.options = JSON.parse(post.options);
 
     let options = await this.model('options').getOptions();
     let push_sites = options.push_sites;
-    let push_sites_keys = post.options.push_sites;
-    let passwordHash = new PasswordHash();
+    let push_sites_keys = postOpt.push_sites;
 
-    async function push(post, {appKey, appSecret, url}) {
-      let auth_key = passwordHash.hashPassword(`${appSecret}${post.markdown_content}`);
-      Object.assign(post, {app_key:appKey, auth_key});
-      request.post({url: url + '/admin/post_push', form: post});
+    if( post.markdown_content.slice(0, 5) !== '> 原文：') {
+      let options = await this.model('options').getOptions();
+      let site_url = options.hasOwnProperty('site_url') ? options.site_url : `http://${this.http.host}`;
+      post.markdown_content = `> 原文：${site_url}/post/${post.pathname}.html
+
+${post.markdown_content}`;
     }
-
     delete post.cate;
     delete post.options;
+
     if(!Array.isArray(push_sites_keys)) { push_sites_keys = [push_sites_keys]; }
-    let pushes = push_sites_keys.map(key => push(post, push_sites[key]));
-    await Promise.all(pushes);
+    let pushes = push_sites_keys.map(key => {
+      let {appKey, appSecret, url} = push_sites[key];
+      let p2fk = new push2Firekylin(url, appKey, appSecret);
+      return p2fk.push(post);
+    });
+    let result = await Promise.all(pushes);
+    console.log('push result for debug: ', result);
   }
 
   async lastest() {
-    let data = await this.modelInstance.getLatest(6);
+    let userId = this.userInfo.type !== 1 ? this.userInfo.id : null;
+    let data = await this.modelInstance.getLatest(userId, 6);
     return this.success(data);
   }
 
@@ -203,12 +218,13 @@ export default class extends Base {
       return `<a href="#${this.generateTocName(c)}">${c}</a>`;
     });
 
-    let markedContent = marked(content).replace(/<h(\d)[^<>]*>(.*?)<\/h\1>/g, (a, b, c) => {
-      if(b == 2){
-        return `<h${b} id="${this.generateTocName(c)}">${c}</h${b}>`;
-      }
-      return `<h${b} id="${this.generateTocName(c)}"><a class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
-    });
+    let markedContent = marked(content);
+    // markedContent = markedContent.replace(/<h(\d)[^<>]*>(.*?)<\/h\1>/g, (a, b, c) => {
+    //   if(b == 2){
+    //     return `<h${b} id="${this.generateTocName(c)}">${c}</h${b}>`;
+    //   }
+    //   return `<h${b} id="${this.generateTocName(c)}"><a class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
+    // });
     // markedContent = markedContent.replace(/<h(\d)[^<>]*>([^<>]+)<\/h\1>/, (a, b, c) => {
     //   return `${a}<div class="toc">${tocContent}</div>`;
     // });
