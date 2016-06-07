@@ -5,6 +5,3 @@ Allow: /post
 Allow: /archives/
 Allow: /tags/
 Sitemap: https://imjiangtao.com/rss.xml
-
-User-agent: MJ12bot
-Disallow: /
