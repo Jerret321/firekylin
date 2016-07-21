@@ -8,7 +8,7 @@
   /*background-color: #202020;*/
 
   background-image:url('/static/img/bg8.jpg');
-  background-position: 15% 50%;
+  background-position: 18.5% 50%;
   background-repeat: no-repeat;
   background-size: cover;
   overflow: auto;
@@ -17,7 +17,7 @@
   -webkit-overflow-scrolling: touch;
 }
 #sidebar:hover{
-  background-position: 75% 50%;
+  background-position: 78.5% 50%;
 }
 #sidebar .wrap a{
   color:#fff !important;
