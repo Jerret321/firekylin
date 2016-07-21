@@ -19,10 +19,8 @@
 #sidebar:hover{
   background-position: 80% 50%;
 }
-#sidebar .wrap{
-  height:100%;
+#sidebar .profile span{
   color:#fff !important;
-  /*background: rgba(255,255,255, .5);*/
 }
 #sidebar .wrap a{
   color:#fff !important;
