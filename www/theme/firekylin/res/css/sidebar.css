@@ -13,7 +13,7 @@
   background-size: cover;
   overflow: auto;
   z-index: 1;
-  transition: background 3s ease-in-out;
+  transition: background 2s ease-in-out;
   -webkit-overflow-scrolling: touch;
 }
 #sidebar:hover{
