@@ -19,9 +19,6 @@
 #sidebar:hover{
   background-position: 80% 50%;
 }
-#sidebar .profile span{
-  color:#fff !important;
-}
 #sidebar .wrap a{
   color:#fff !important;
 }
@@ -50,7 +47,7 @@
   display: block;
   padding: 10px 0;
   font-size: 18px;
-  color: #999;
+  color: #fff;
   text-align: center;
 }
 #sidebar .buttons {
