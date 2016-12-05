@@ -3,7 +3,9 @@
   "description": "A Simple & Fast Node Bloging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+",
   "version": "0.12.2",
   "scripts": {
-    "start": "node www/development.js",
+    "dev": "node www/development.js",
+    "start":"pm2 start pm2.json",
+    "prestart": "npm i --registry=https://registry.npm.taobao.org",
     "compile": "babel --presets es2015-loose,stage-1 --plugins transform-runtime src/ --out-dir app/",
     "watch-compile": "node -e \"console.log('<npm run watch-compile> no longer need, use <npm start> command direct.');console.log();\"",
     "watch": "npm run watch-compile",
