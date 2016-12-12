@@ -50,8 +50,10 @@ sitemap.xml
 output/
 output.theme/
 .version
+.installed
 
 build/firekylin
 
 75team.sh
 stc/
+jsconfig.json

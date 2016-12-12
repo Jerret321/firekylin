@@ -3,7 +3,7 @@ import Base from 'base';
 import {Link} from 'react-router';
 import classnames from 'classnames';
 
-export default class extends Base {
+module.exports = class extends Base {
   state = {
     routes: [
       {url: '/dashboard', icon: 'home', title:'概述'},
@@ -32,10 +32,15 @@ export default class extends Base {
         {url: '/push/list', title: '推送列表'},
         {url: '/push/create', title: '新增推送'}
       ]},
+      {url: '/appearance', icon: 'list', title: '外观设置', type: 1, children: [
+        {url: '/appearance/theme', title: '主题管理'},
+        {url: '/appearance/navigation', title: '菜单管理'}
+      ]},
       {url: '/options', icon: 'setting', title: '系统设置', type: 1, children: [
         {url: '/options/general', title: '基本设置'},
         {url: '/options/two_factor_auth', title: '两步验证'},
         {url: '/options/comment', title: '评论设置'},
+        {url: '/options/upload', title: '上传设置'},
         {url: '/options/analytic', title: '统计代码'},
         {url: '/options/push', title: '推送设置'},
         {url: '/options/import', title: '导入数据'}
@@ -58,19 +63,19 @@ export default class extends Base {
       active: active
     })
   }
-  getSubUlClassName(routeUrl){
-    if(this.isActive(routeUrl)){
-      return 'block';
-    }
-    return 'hide';
-  }
+  // getSubUlClassName(routeUrl){
+  //   if(this.isActive(routeUrl)){
+  //     return 'block';
+  //   }
+  //   return 'hide';
+  // }
   getSubLinkClassName(routeUrl){
     return classnames({
       active: this.isActive(routeUrl)
     })
   }
   open(routeUrl){
-    this.context.router.push(routeUrl)
+    this.context.router.push(routeUrl);
   }
   render(){
     let routes = this.state.routes;
@@ -101,7 +106,7 @@ export default class extends Base {
               </Link>
               }
               {route.children ?
-                <ul className={this.getSubUlClassName(route.url)}>
+                <ul style={{height: 49*(this.isActive(route.url) ? route.children.length : 0)}}>
                   {route.children.map((child, j) =>
                     <li key={j}>
                       <Link to={child.url} onClick={this.open.bind(this, child.url)} className={this.getSubLinkClassName(child.url)}>

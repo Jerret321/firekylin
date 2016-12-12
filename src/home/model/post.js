@@ -46,9 +46,11 @@ export default class extends think.model.relation {
    * @return {[type]}       [description]
    */
   async getPostList(page, options = {}){
+    page = page | 0 || 1;
+
     let field = options.field || 'id,title,pathname,create_time,summary,comment_num';
     if( (await this.model('user').count()) > 1 ) { field += ',user_id'; }
-    
+
     if(options.tag || options.cate){
       let name = options.tag ? 'tag' : 'cate';
       let {id} = await this.model(name).field('id').setRelation(false).where({name: options.tag || options.cate}).find();
@@ -60,17 +62,16 @@ export default class extends think.model.relation {
         table: `post_${name}`,
         as: name,
         on: ['id', 'post_id']
-      }).where(where).order('create_time DESC').countSelect();
+      }).where(where).order('create_time DESC').page(page).countSelect();
     }
 
     let where = this.getWhereCondition(options.where);
-    page = page | 0 || 1;
-    //only cache first page post
-    // if(page === 1){
-    //   return think.cache('post_1', () => {
-    //     return this.field(field).page(page).setRelation(false).order('create_time DESC').where(where).countSelect();
-    //   },{timeout:259200});
-    // }
+    // only cache first page post
+    if(page === 1){
+      return think.cache('post_1', () => {
+        return this.field(field).page(page).setRelation(false).order('create_time DESC').where(where).countSelect();
+      },{timeout:259200});
+    }
 
     return this.field(field).page(page).setRelation('user').order('create_time DESC').where(where).countSelect();
   }
@@ -81,7 +82,7 @@ export default class extends think.model.relation {
    * @return {[type]}          [description]
    */
   async getPostDetail(pathname){
-    let where = this.getWhereCondition({pathname: pathname});
+    let where = this.getWhereCondition({pathname});
     let detail = await this.where(where).fieldReverse('markdown_content,summary').find();
     if(think.isEmpty(detail)){
       return detail;
@@ -98,11 +99,9 @@ export default class extends think.model.relation {
     });
     let nextPromise = this.field('title,pathname').setRelation(false).where(nextWhere).order('create_time ASC').find();
     let [prev, next] = await Promise.all([prevPromise, nextPromise]);
-    return {
-      detail,
-      prev,
-      next
-    }
+    detail.prev = prev;
+    detail.next = next;
+    return detail;
   }
   async getPostRssList(){
     let field = 'id,title,pathname,content,create_time';
