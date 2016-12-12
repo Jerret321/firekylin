@@ -20,7 +20,9 @@ export default {
   },
   output: {
     path: `${base}/js`,
-    filename: '[name].bundle.js'
+    filename: '[name].js',
+    publicPath: '/static/js/',
+    chunkFilename: '[name].js'
   },
   resolve: {
     extensions: ['', '.js', '.jsx'],
@@ -49,7 +51,6 @@ export default {
     ]
   },
   plugins: [
-    new webpack.optimize.CommonsChunkPlugin({name: 'vendor', filename: 'common.js'}),
-    //new webpack.optimize.UglifyJsPlugin({compress: {warnings: false}})
+    new webpack.optimize.CommonsChunkPlugin({name: 'vendor', filename: 'common.js'})
   ]
 };

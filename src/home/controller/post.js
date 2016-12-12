@@ -30,10 +30,15 @@ export default class extends Base {
     }
 
     let list = await model.getPostList(this.get('page'), where);
-    this.assign('tag', this.get('tag'));
-    this.assign('cate', this.get('cate'));
-    this.assign('postList', list);
-    return this.displayView('list');
+    list.data.forEach(post => post.pathname = encodeURIComponent(post.pathname));
+    let {data, ...pagination} = list;
+    this.assign({
+      posts: data,
+      pagination,
+      tag: this.get('tag'),
+      cate: this.get('cate')
+    });
+    return this.displayView('index');
   }
   /**
    * post detail
@@ -46,19 +51,21 @@ export default class extends Base {
     if(think.isEmpty(detail)){
       return this.redirect('/');
     }
-    this.assign(detail);
+    detail.pathname = encodeURIComponent(detail.pathname);
+    this.assign('post', detail);
 
-    return this.displayView('detail');
+    return this.displayView('post');
   }
 
   async pageAction(){
     let pathname = this.get('pathname');
     let detail = await this.model('post').setRelation(false).where({
-      pathname: pathname,
+      pathname,
       is_public: 1, //公开
       type: 1, //文章
       status: 3 //已经发布
     }).find();
+    detail.pathname = encodeURIComponent(detail.pathname);
     this.assign('page', detail);
     this.assign('pathname', pathname);
 
@@ -71,6 +78,7 @@ export default class extends Base {
   async archiveAction(){
     let model = this.model('post');
     let data = await model.getPostArchive();
+    for(let i in data) { data[i].map(post => post.pathname = encodeURIComponent(post.pathname)) };
     this.assign('list', data);
     return this.displayView('archive');
   }
@@ -78,6 +86,7 @@ export default class extends Base {
   async tagAction(){
     let model = this.model('tag');
     let data = await model.getTagArchive();
+    data.map(post => post.pathname = encodeURIComponent(post.pathname));
     this.assign('list', data);
     return this.displayView('tag');
   }

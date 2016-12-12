@@ -93,18 +93,23 @@ export default class extends Base {
     if (!this.id) {
       return this.fail('PARAMS_ERROR');
     }
+
     let data = this.post();
-
-    /** 推送文章 **/
-    this.pushPost(data);
-
     data.id = this.id;
-    data = this.getPostTime(data);
-    data = this.getContentAndSummary(data);
-    data.options = data.options ? JSON.stringify(data.options) : '';
-    if(data.tag) {
-      data.tag = await this.getTagIds(data.tag);
+
+    /** 判断接收的参数中是否有 markdown_content 来区别审核通过的状态修改和普通的文章更新 */
+    if( data.markdown_content ) {
+      /** 推送文章 */
+      this.pushPost(data);
+
+      data = this.getPostTime(data);
+      data = this.getContentAndSummary(data);
+      data.options = data.options ? JSON.stringify(data.options) : '';
+      if(data.tag) {
+        data.tag = await this.getTagIds(data.tag);
+      }
     }
+
     let rows = await this.modelInstance.savePost(data);
     return this.success({affectedRows: rows});
   }
@@ -127,7 +132,6 @@ export default class extends Base {
   }
 
   async pushPost(post) {
-    console.log(post);
     let postOpt = JSON.parse(post.options);
     let canPush = Array.isArray(postOpt.push_sites) && postOpt.push_sites.length > 0;
     if( post.status != 3 && post.is_public != 1 && !canPush ) {
@@ -176,9 +180,21 @@ ${post.markdown_content}`;
     return data;
   }
 
+  /**
+   * 渲染 markdown 
+   * 摘要为部分内容时不展示 TOC
+   */
   getContentAndSummary(data) {
     data.content = this.markdownToHtml(data.markdown_content);
-    data.summary = data.content.split('<!--more-->')[0].replace(/<[>]*>/g, '');
+
+    data.summary = data.markdown_content.split('<!--more-->')[0];
+    if( data.summary === data.markdown_content ) {
+      data.summary = data.content;
+    } else {
+      data.summary = this.markdownToHtml(data.summary, {toc: false});
+    }
+    data.summary.replace(/<[>]*>/g, '');
+    
     return data;
   }
 
@@ -213,29 +229,38 @@ ${post.markdown_content}`;
    * markdown to html
    * @return {} []
    */
-  markdownToHtml(content){
-    let tocContent = marked(markToc(content)).replace(/<a\s+href="#([^\"]+)">([^<>]+)<\/a>/g, (a, b, c) => {
-      return `<a href="#${this.generateTocName(c)}">${c}</a>`;
-    });
-
+  markdownToHtml(content, option = {toc: true, highlight: true}){
     let markedContent = marked(content);
-    // markedContent = markedContent.replace(/<h(\d)[^<>]*>(.*?)<\/h\1>/g, (a, b, c) => {
-    //   if(b == 2){
-    //     return `<h${b} id="${this.generateTocName(c)}">${c}</h${b}>`;
-    //   }
-    //   return `<h${b} id="${this.generateTocName(c)}"><a class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
-    // });
-    // markedContent = markedContent.replace(/<h(\d)[^<>]*>([^<>]+)<\/h\1>/, (a, b, c) => {
-    //   return `${a}<div class="toc">${tocContent}</div>`;
-    // });
+    
+    /**
+     * 增加 TOC 目录
+     */
+    if( option.toc ) {
+      let tocContent = marked(markToc(content)).replace(/<a\s+href="#([^\"]+)">([^<>]+)<\/a>/g, (a, b, c) => {
+        return `<a href="#${this.generateTocName(c)}">${c}</a>`;
+      });
 
-    let highlightContent = markedContent.replace(/<pre><code\s*(?:class="lang-(\w+)")?>([\s\S]+?)<\/code><\/pre>/mg, (a, language, text) => {
-      text = text.replace(/&#39;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/\&quot;/g, '"').replace(/\&amp;/g, "&");
-      var result = highlight.highlightAuto(text, language ? [language] : undefined);
-      return `<pre><code class="hljs lang-${result.language}">${result.value}</code></pre>`;
-    });
+      markedContent = markedContent.replace(/<h(\d)[^<>]*>(.*?)<\/h\1>/g, (a, b, c) => {
+        if(b == 2){
+          return `<h${b} id="${this.generateTocName(c)}">${c}</h${b}>`;
+        }
+        return `<h${b} id="${this.generateTocName(c)}"><a class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
+      });
+      markedContent = `<div class="toc">${tocContent}</div>${markedContent}`;
+    }
 
-    return highlightContent;
+    /**
+     * 增加代码高亮
+     */
+    if( option.highlight ) {
+      markedContent = markedContent.replace(/<pre><code\s*(?:class="lang-(\w+)")?>([\s\S]+?)<\/code><\/pre>/mg, (a, language, text) => {
+        text = text.replace(/&#39;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/\&quot;/g, '"').replace(/\&amp;/g, "&");
+        var result = highlight.highlightAuto(text, language ? [language] : undefined);
+        return `<pre><code class="hljs lang-${result.language}">${result.value}</code></pre>`;
+      });
+    }
+    
+    return markedContent;
   }
 
 }

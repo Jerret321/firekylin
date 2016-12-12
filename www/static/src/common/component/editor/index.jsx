@@ -1,9 +1,14 @@
-import React, { PropTypes as T } from 'react';
-import Autobind from 'autobind-decorator';
-import ReactDOM from 'react-dom';
+/**
+ * 本项目的编辑器是由 https://github.com/leozdgao/react-markdown 该项目修改而来，感谢作者的无私奉献！
+ */
+import Base from 'base';
 import marked from 'marked';
+import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 import {Tabs, Tab} from 'react-bootstrap';
+import Autobind from 'autobind-decorator';
+import ModalStore from 'common/store/modal';
+import React, { PropTypes as T } from 'react';
 import ModalAction from 'common/action/modal';
 import firekylin from 'common/util/firekylin';
 import Search from './search';
@@ -11,7 +16,7 @@ import './style.css';
 
 import TipAction from 'common/action/tip';
 
-class MdEditor extends React.Component {
+class MdEditor extends Base {
   static defaultProps = {
     content: ''
   };
@@ -50,6 +55,21 @@ class MdEditor extends React.Component {
         })
     }
     this.textControl.addEventListener('keydown', this._bindKey);
+
+    this.textControl.addEventListener('paste', e => {
+      let clipboard = e.clipboardData;
+      let FileList = Array.from(clipboard.items)
+        .filter(item => item.kind==='file' && item.type.indexOf('image') > -1)
+        .map(item => item.getAsFile());
+      if( !FileList.length ) { return true; }
+
+      e.preventDefault();
+      let data = new FormData();
+      data.append('file', FileList[0]);
+      this._uploadImage.call(this, data, {type: 'image'});
+    });
+
+    this.listen(ModalStore, () => this.textControl.focus(), 'removeModal');
   }
 
   _bindKey(e) {
@@ -197,10 +217,25 @@ class MdEditor extends React.Component {
     this.setState({ isFullScreen: !this.state.isFullScreen }, () => this.props.onFullScreen(this.state.isFullScreen));
   }
 
+  _cleanSelect() {
+    const start = this.textControl.selectionStart;
+    const end = this.textControl.selectionEnd;
+    if( start === end ) {
+      return true;
+    }
+
+    let text = this.props.content;
+    text = text.slice(0, start) + text.slice(end);
+    this.setState({ result: marked(text) });
+    this.props.onChange(text);
+
+    return start;
+  }
+
   // default text processors
-  _preInputText (text, preStart, preEnd) {
-    const start = this.textControl.selectionStart
-    const end = this.textControl.selectionEnd
+  _preInputText (text, preStart, preEnd, selectStart) {
+    const start = selectStart || this.textControl.selectionStart;
+    const end = selectStart || this.textControl.selectionEnd;
     const origin = this.props.content;
 
     if (start !== end) {
@@ -281,7 +316,7 @@ class MdEditor extends React.Component {
   }
 
   _pictureText () {
-    let preInputText = this._preInputText, that = this;
+    let that = this;
     ModalAction.confirm(
       '插入图片',
       <Tabs defaultActiveKey={1}>
@@ -296,7 +331,7 @@ class MdEditor extends React.Component {
           </div>
         </Tab>
       </Tabs>,
-      ()=> {
+      () => {
         if( (this.state.file && this.state.file.length === 0) && !this.state.fileUrl ) {
           return false;
         }
@@ -308,19 +343,29 @@ class MdEditor extends React.Component {
           data.append('file', this.state.file[0]);
         }
 
-        return firekylin.upload(data).then(
-          res => {
-            res.data = location.origin + res.data;
-            if( res.data.match(/\.(?:jpg|jpeg|png|bmp|gif|webp|svg|wmf|tiff|ico)$/i) ) {
-              preInputText(`![alt](${res.data})`, 2, 5);
-            } else {
-              let text = that.state.fileUrl ? '链接文本' : that.state.file[0].name;
-              preInputText(`[${text}](${res.data})`, 1, text.length + 1);
-            }
-          }
-        ).catch((res)=> TipAction.fail(res.errmsg));
+        this._uploadImage.call(this, data, {});
       }
     );
+  }
+
+  _uploadImage(data, {type = ''}) {
+    this._preInputText("![图片上传中…]", 0, 9);
+    return firekylin.upload(data).then(res => {
+      let start = this._cleanSelect();
+      const reg = /^https?:\/\/.+/;
+      if (!reg.test(res.data)) {
+        res.data = location.origin + res.data;
+      }
+      if( type.includes('image') || res.data.match(/\.(?:jpg|jpeg|png|bmp|gif|webp|svg|wmf|tiff|ico)$/i) ) {
+        this._preInputText(`![alt](${res.data})`, 2, 5, start);
+      } else {
+        let text = that.state.fileUrl ? '链接文本' : that.state.file[0].name;
+        this._preInputText(`[${text}](${res.data})`, 1, text.length + 1, start);
+      }
+    }).catch((res)=> {
+      this._cleanSelect();
+      TipAction.fail(res.errmsg);
+    });
   }
 
   _listUlText () {

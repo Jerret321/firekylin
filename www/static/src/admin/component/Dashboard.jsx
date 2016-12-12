@@ -1,5 +1,6 @@
 import React from 'react';
 import Base from 'base';
+import ReactDOM from 'react-dom';
 import {Link} from 'react-router';
 import BreadCrumb from 'admin/component/breadcrumb';
 import moment from 'moment';
@@ -8,8 +9,17 @@ import PostAction from 'admin/action/post';
 import PostStore from 'admin/store/post';
 import SystemAction from 'admin/action/system';
 import SystemStore from 'admin/store/system';
+import ModalAction from 'common/action/modal';
 
-export default class extends Base {
+const UPDATE_STEPS = [
+  [1, '正在下载 Firekylin 最新版本...', 'Firekylin 下载成功！'],
+  [2, '正在解压更新文件...', '文件更新成功！'],
+  [3, '正在重新安装依赖...', '依赖安装成功！'],
+  [4, '正在重启程序...', '程序重启成功，将在 %d 秒后刷新页面！']
+];
+const COUNT_DOWN = 3;
+
+module.exports = class extends Base {
   state = {
     platform: '',
     nodeVersion: '',
@@ -22,16 +32,81 @@ export default class extends Base {
       posts: 0,
       comments: 0,
       cates: 0
-    }
+    },
+    step: 1,
+    downCount: COUNT_DOWN
   };
 
   componentWillMount() {
     this.listenTo(PostStore, posts => this.setState({posts}));
-    this.listenTo(SystemStore, data => {
-      this.setState(Object.assign({}, data.versions, {count: data.count}));
-    });
+    this.listenTo(SystemStore, this.handleTrigger.bind(this));
     PostAction.selectLastest();
     SystemAction.select();
+  }
+
+  handleTrigger(data, type) {
+    switch(type) {
+      case 'updateSystem':
+        if( this.state.step <= UPDATE_STEPS.length ) {
+          this.setState({step: this.state.step + 1}, () => SystemAction.updateSystem(this.state.step));
+        }
+        if( this.state.step > UPDATE_STEPS.length ) {
+          setTimeout(location.reload.bind(location), COUNT_DOWN * 1000);
+          setInterval(() => this.setState({downCount: Math.max(0, --this.state.downCount)}), 1000);
+        }
+        break;
+
+      case 'getSystemInfo':
+        this.setState(Object.assign({}, data.versions, {count: data.count}));
+        break;
+    }
+  }
+
+  renderUpdateConfirm() {
+    ModalAction.confirm(
+      '在线更新警告!',
+      <div>在线更新会覆盖文件，请确认你已经备份好对程序的修改，如果没有修改请忽略该警告。</div>,
+      ()=> {
+        this.setState({showUpdate: true});
+        SystemAction.updateSystem(this.state.step);
+      }
+    );
+  }
+
+  renderUpdate() {
+    return (
+    <div className="modal fade in" style={{display: this.state.showUpdate ? 'block' : 'none'}}>
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">×</span>
+            </button>
+            <h4 className="modal-title" >在线更新</h4>
+          </div>
+          <div className="modal-body" >
+            <div className="dialog-panel anim-modal " >
+              <a href="###" className="close-btn" ></a>
+              <div className="dialog-content" >
+                <ul className="update-step">
+                  {UPDATE_STEPS.map(step =>
+                    <li key={step[0]} className={this.state.step >= step[0] ? 'show' : null}>
+                      <i className={this.state.step > step[0] ? 'success' : null}>{step[0]}</i>
+                      <div className="pipe">
+                        <div className="half"></div>
+                      </div>
+                      <span className="loading">{step[1]}</span>
+                      <span className="ok">{step[2].replace('%d', this.state.downCount)}</span>
+                    </li>  
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    );
   }
 
   render() {
@@ -40,8 +115,8 @@ export default class extends Base {
         <BreadCrumb {...this.props} />
         <div className="manage-container">
           {this.state.needUpdate ?
-            <p className="bg-info" style={{padding: 15, color: '#337ab7'}}>
-              Firekylin {this.state.needUpdate} 已经发布，请立即<a href="http://firekylin.org/release/latest.tar.gz" style={{textDecoration: 'underline'}}>下载更新</a>！
+            <p className="bg-info update-message">
+              Firekylin <a href={`https://github.com/75team/firekylin/blob/master/CHANGELOG.md#${this.state.needUpdate.replace(/\./g, '')}`}>{this.state.needUpdate}</a> 已经发布，请立即 <a href="http://firekylin.org/release/latest.tar.gz">下载更新</a> 或者使用 <a href="javascript:void(0)" onClick={this.renderUpdateConfirm.bind(this)}>在线更新</a>！
             </p>
           : null}
           <h3 style={{marginBottom: '30px'}}>网站概要</h3>
@@ -49,6 +124,8 @@ export default class extends Base {
           <p>点击下面的链接快速开始:</p>
           <div className="">
             <Link to="/post/create">撰写新文章</Link>
+            <Link to="/page/create" style={{marginLeft: 20}}>创建页面</Link>
+            <Link to="/appearance/theme" style={{marginLeft: 20}}>更改外观</Link>
             <Link to="/options/general" style={{marginLeft: 20}}>系统设置</Link>
           </div>
           <hr />
@@ -102,6 +179,7 @@ export default class extends Base {
             </div>
           </div>
         </div>
+        {this.renderUpdate()}
       </div>
     );
   }
