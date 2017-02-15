@@ -1,6 +1,6 @@
 {
   "apps": [{
-    "name": "jiangtao's blog",
+    "name": "jiangtao_blog",
     "script": "www/production.js",
     "cwd": "/var/www/blog",
     "exec_mode": "fork",
