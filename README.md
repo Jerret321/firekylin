@@ -1,6 +1,6 @@
 ## FireKylin
 
-A Simple & Fast Node Bloging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+
+A Simple & Fast Node Blogging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+
 
 ## 安装
 
@@ -8,7 +8,7 @@ A Simple & Fast Node Bloging Platform Base On ThinkJS 2.0 & ReactJS & ES2015+
 
 Firekylin 支持 Docker 安装使用，具体可参考 [docker-firekylin](https://github.com/cosli/docker-firekylin)。正常版的安装过程如下：
 
-1. [下载最新的安装包 - v0.14.0](http://firekylin.org/release/firekylin_0.14.0.tar.gz)
+1. [下载最新的安装包 - v0.15.1](http://firekylin.org/release/firekylin_0.15.1.tar.gz)
 
 2. 解压安装包，执行 `npm install` 安装对应的依赖*（执行之前请确认已有 Node.js 环境，Node.js 版本要大于 4.0）*。
 
@@ -48,15 +48,8 @@ Firekylin 支持 Docker 安装使用，具体可参考 [docker-firekylin](https:
 
     设置文件 `port` 的内容为 `9999`，表示设置的端口为 `9999`。
 
-- **如何升级？**  
-    下载最新的安装包，解压覆盖原有的目录，然后通过 `pm2 restart pm2.json` 重启服务。  
-    部分版本升级可能需要更新数据表，具体请见[这里](https://github.com/75team/firekylin/wiki/%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7)。
-
-- **后台菜单设置的菜单属性是什么？**  
-    菜单属性就是对应该菜单的附加属性，主题内可以获取到这个属性对菜单进行对应操作。例如默认主题里会直接读取属性内容作为字体图标的名称。当然你也可以自定义设置一个 JSON 数据在主题中解析获取菜单的更多属性。
-
 - **如何更新 Firekylin？**  
-    假设你的网站目录再 `/var/www/xxx`，那么在服务器上执行以下命令即可完成更新操作。使用其他进程守护工具的自行替换重启进程守护命令。
+    0.14.0+ 版本已经支持直接在线更新程序，无需以下步骤，0.14.0 版本以下的需要手动执行更新操作。假设你的网站目录再 `/var/www/xxx`，那么在服务器上执行以下命令即可完成更新操作。使用其他进程守护工具的自行替换重启进程守护命令。
     ```
     cd /var/www/xxx
     wget http://firekylin.org/release/latest.tar.gz
@@ -67,10 +60,14 @@ Firekylin 支持 Docker 安装使用，具体可参考 [docker-firekylin](https:
     rm -rf firekylin latest.tar.gz
     ```
 
+- **后台菜单设置的菜单属性是什么？**  
+    菜单属性就是对应该菜单的附加属性，主题内可以获取到这个属性对菜单进行对应操作。例如默认主题里会直接读取属性内容作为字体图标的名称。当然你也可以自定义设置一个 JSON 数据在主题中解析获取菜单的更多属性。
+
 ## 使用 FireKylin 构建的博客系统（排名不分先后）：
 
 * http://www.75team.com/ - 奇舞团博客
-* http://blog.h5jun.com/ - 月影的博客
+* http://www.opsdev.cn - opsdev
+* http://h5jun.com/ - 月影的博客
 * http://gyblog.cn/ - 光宇的博客
 * http://welefen.com/ - welefen 的博客
 * https://haozi.me/ - 耗子么
@@ -81,6 +78,7 @@ Firekylin 支持 Docker 安装使用，具体可参考 [docker-firekylin](https:
 * https://g.32ph.com/ - Steven's Club
 * https://cooxa.com/ - 大路小兵的博客
 * http://www.60sky.com/ - 小撸的博客
+* http://imwineki.cn/ - 花花的博客
 
 如果你的博客也是用 FireKylin 构建的，请到 https://github.com/75team/firekylin/issues/34 提交网址。
 

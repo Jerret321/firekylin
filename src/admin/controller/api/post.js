@@ -1,7 +1,7 @@
 'use strict';
 import marked from "marked";
 import Base from './base.js';
-import markToc from "marked-toc";
+import toc from 'markdown-toc';
 import highlight from 'highlight.js';
 import push2Firekylin from 'push-to-firekylin';
 
@@ -47,8 +47,8 @@ export default class extends Base {
         }
       }
 
-      let field = ['id', 'title', 'user_id', 'create_time', 'update_time', 'status', 'pathname'];
-      data = await this.modelInstance.where(where).field(field).order('id DESC').page( this.get('page'), 15 ).countSelect();
+      let field = ['id', 'title', 'user_id', 'create_time', 'update_time', 'status', 'pathname', 'is_public'];
+      data = await this.modelInstance.where(where).field(field).order('create_time DESC').page( this.get('page'), 15 ).countSelect();
     }
     return this.success(data);
   }
@@ -77,7 +77,7 @@ export default class extends Base {
     this.pushPost(data);
 
     data.tag = await this.getTagIds(data.tag);
-    data = this.getContentAndSummary(data);
+    data = await this.getContentAndSummary(data);
     data.user_id = this.userInfo.id;
     data = this.getPostTime(data);
     data.options = data.options ? JSON.stringify(data.options) : '';
@@ -103,7 +103,7 @@ export default class extends Base {
       this.pushPost(data);
 
       data = this.getPostTime(data);
-      data = this.getContentAndSummary(data);
+      data = await this.getContentAndSummary(data);
       data.options = data.options ? JSON.stringify(data.options) : '';
       if(data.tag) {
         data.tag = await this.getTagIds(data.tag);
@@ -144,7 +144,6 @@ export default class extends Base {
     let push_sites_keys = postOpt.push_sites;
 
     if( post.markdown_content.slice(0, 5) !== '> 原文：') {
-      let options = await this.model('options').getOptions();
       let site_url = options.hasOwnProperty('site_url') ? options.site_url : `http://${this.http.host}`;
       post.markdown_content = `> 原文：${site_url}/post/${post.pathname}.html
 
@@ -183,16 +182,23 @@ ${post.markdown_content}`;
   /**
    * 渲染 markdown 
    * 摘要为部分内容时不展示 TOC
+   * 文章正文设置为手动指定 TOC 时不显示
+   * 页面不自动生成 TOC 除非是手动指定了
    */
-  getContentAndSummary(data) {
-    data.content = this.markdownToHtml(data.markdown_content);
-
-    data.summary = data.markdown_content.split('<!--more-->')[0];
-    if( data.summary === data.markdown_content ) {
-      data.summary = data.content;
+  async getContentAndSummary(data) {
+    let options = await this.model('options').getOptions();
+    let postTocManual = options.postTocManual === '1';
+    
+    let showToc;
+    if( !postTocManual ) {
+      showToc = data.type/1 === 0;
     } else {
-      data.summary = this.markdownToHtml(data.summary, {toc: false});
+      showToc = /(?:^|[\r\n]+)\s*\<\!--toc--\>\s*[\r\n]+/i.test(data.markdown_content);
     }
+
+    data.content = this.markdownToHtml(data.markdown_content, {toc: showToc, highlight: true});
+    data.summary = data.markdown_content.split('<!--more-->')[0];
+    data.summary = this.markdownToHtml(data.summary, {toc: false, highlight: true});
     data.summary.replace(/<[>]*>/g, '');
     
     return data;
@@ -236,15 +242,12 @@ ${post.markdown_content}`;
      * 增加 TOC 目录
      */
     if( option.toc ) {
-      let tocContent = marked(markToc(content)).replace(/<a\s+href="#([^\"]+)">([^<>]+)<\/a>/g, (a, b, c) => {
+      let tocContent = marked(toc(content).content).replace(/<a\s+href="#([^\"]+)">([^<>]+)<\/a>/g, (a, b, c) => {
         return `<a href="#${this.generateTocName(c)}">${c}</a>`;
       });
 
       markedContent = markedContent.replace(/<h(\d)[^<>]*>(.*?)<\/h\1>/g, (a, b, c) => {
-        if(b == 2){
-          return `<h${b} id="${this.generateTocName(c)}">${c}</h${b}>`;
-        }
-        return `<h${b} id="${this.generateTocName(c)}"><a class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
+        return `<h${b}><a id="${this.generateTocName(c)}" class="anchor" href="#${this.generateTocName(c)}"></a>${c}</h${b}>`;
       });
       markedContent = `<div class="toc">${tocContent}</div>${markedContent}`;
     }
@@ -254,7 +257,7 @@ ${post.markdown_content}`;
      */
     if( option.highlight ) {
       markedContent = markedContent.replace(/<pre><code\s*(?:class="lang-(\w+)")?>([\s\S]+?)<\/code><\/pre>/mg, (a, language, text) => {
-        text = text.replace(/&#39;/g, '"').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/\&quot;/g, '"').replace(/\&amp;/g, "&");
+        text = text.replace(/&#39;/g, '\'').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/\&quot;/g, '"').replace(/\&amp;/g, "&");
         var result = highlight.highlightAuto(text, language ? [language] : undefined);
         return `<pre><code class="hljs lang-${result.language}">${result.value}</code></pre>`;
       });
