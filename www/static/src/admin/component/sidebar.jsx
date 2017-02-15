@@ -34,10 +34,12 @@ module.exports = class extends Base {
       ]},
       {url: '/appearance', icon: 'list', title: '外观设置', type: 1, children: [
         {url: '/appearance/theme', title: '主题管理'},
-        {url: '/appearance/navigation', title: '菜单管理'}
+        {url: '/appearance/navigation', title: '菜单管理'},
+        {url: '/appearance/edit', title: '编辑主题'}
       ]},
       {url: '/options', icon: 'setting', title: '系统设置', type: 1, children: [
         {url: '/options/general', title: '基本设置'},
+        {url: '/options/reading', title: '阅读设置'},
         {url: '/options/two_factor_auth', title: '两步验证'},
         {url: '/options/comment', title: '评论设置'},
         {url: '/options/upload', title: '上传设置'},
