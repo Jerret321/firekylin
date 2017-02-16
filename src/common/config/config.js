@@ -9,6 +9,6 @@ if(think.isFile(portFile)){
  * config
  */
 export default {
-  port: port || 4321,
+  port: port || 8360,
   resource_reg: /^(static\/|theme\/|[^\/]+\.(?!js|html|xml)\w+$)/
 };
