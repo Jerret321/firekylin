@@ -45,3 +45,4 @@ upload
 conf/
 www/static/js/
 src/common/config/route.js
+nginx.conf
