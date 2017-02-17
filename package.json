@@ -78,6 +78,9 @@
     "superagent": "^1.7.2",
     "webpack": "^2.2.0"
   },
+  "optionalDependencies": {
+    "fsevents": "*"
+  },
   "repository": "https://github.com/75team/firekylin",
   "license": "MIT"
 }
