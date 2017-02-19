@@ -4,7 +4,7 @@
   "version": "0.15.1",
   "scripts": {
     "dev": "node www/development.js",
-    "start": "pm2 start pm2.json",
+    "start": "webpack && pm2 start pm2.json",
     "prestart": "npm i --registry=https://registry.npm.taobao.org",
     "compile": "babel --presets es2015-loose,stage-1 --plugins transform-runtime src/ --out-dir app/",
     "watch-compile": "node -e \"console.log('<npm run watch-compile> no longer need, use <npm start> command direct.');console.log();\"",
