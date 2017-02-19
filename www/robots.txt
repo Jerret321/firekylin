@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /search.html
+Disallow: /about
+Allow: /post
+Allow: /archives/
+Allow: /tags/
+Sitemap: https://imjiangtao.com/rss.xml

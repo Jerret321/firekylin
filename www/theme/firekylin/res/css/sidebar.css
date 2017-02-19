@@ -5,10 +5,22 @@
   position: fixed;
   left: 0;
   top: 0;
-  background-color: #202020;
+  /*background-color: #202020;*/
+
+  background-image:url('/static/img/bg8.jpg');
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: cover;
   overflow: auto;
   z-index: 1;
+  transition: background 2s ease-in-out;
   -webkit-overflow-scrolling: touch;
+}
+#sidebar:hover{
+  background-position: right center;
+}
+#sidebar .wrap a{
+  color:#fff !important;
 }
 #sidebar li,
 #sidebar ul {
@@ -35,7 +47,7 @@
   display: block;
   padding: 10px 0;
   font-size: 18px;
-  color: #999;
+  color: #fff;
   text-align: center;
 }
 #sidebar .buttons {
